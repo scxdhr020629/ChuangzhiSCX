@@ -80,7 +80,7 @@ def main():
                 output_text = response.choices[0].message.content.strip()
 
                 # 解析输出
-                predicted = parse_output(output_text)
+                predicted = parse_output(output_text, debug=True, sample_idx=idx)
 
                 # 计算准确率
                 is_correct = calculate_accuracy(predicted, ground_truth)

@@ -103,63 +103,109 @@ def format_grid(grid):
     return '\n'.join(lines)
 
 
-def parse_output(text):
+def parse_output(text, debug=True, sample_idx=None):
     """
     解析大语言模型的输出文本，提取预测的网格
 
     参数:
     text (str): 大语言模型在设计prompt下的输出文本
+    debug (bool): 是否输出调试信息
+    sample_idx (int): 当前样本索引（用于调试输出）
 
     返回:
     list: 从输出文本解析出的二维数组 (Python列表，元素为整数)
     """
 
+    sample_info = f"[Sample {sample_idx}]" if sample_idx else ""
+
+    if debug:
+        print(f"  {sample_info} Parsing output using multiple strategies...")
+
     # 策略1: 查找 "最终输出:" 或 "FINAL OUTPUT:" 标记
+    if debug:
+        print(f"  {sample_info} Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...")
+
     patterns = [
-        r"最终输出[：:]\s*\n?(.*?)(?:\n\n|\Z)",
-        r"FINAL OUTPUT:\s*\n?(.*?)(?:\n\n|\Z)",
-        r"Final Output:\s*\n?(.*?)(?:\n\n|\Z)",
-        r"final output:\s*\n?(.*?)(?:\n\n|\Z)"
+        (r"最终输出[：:]\s*\n?(.*?)(?:\n\n|\Z)", "最终输出"),
+        (r"FINAL OUTPUT:\s*\n?(.*?)(?:\n\n|\Z)", "FINAL OUTPUT"),
+        (r"Final Output:\s*\n?(.*?)(?:\n\n|\Z)", "Final Output"),
+        (r"final output:\s*\n?(.*?)(?:\n\n|\Z)", "final output")
     ]
 
-    for pattern in patterns:
+    for pattern, pattern_name in patterns:
         match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
         if match:
+            if debug:
+                print(f"    {sample_info} Found '{pattern_name}' marker!")
             output_text = match.group(1).strip()
             grid = extract_grid_from_text(output_text)
             if grid and validate_grid(grid):
+                if debug:
+                    print(f"    {sample_info} ✓ Successfully parsed grid using Strategy 1 (marker: {pattern_name})")
                 return grid
+            elif debug:
+                print(f"    {sample_info} Found marker but failed to extract valid grid")
 
     # 策略2: 查找所有Python列表格式
+    if debug:
+        print(f"  {sample_info} Strategy 2: Looking for Python list format [[...]]...")
+
     list_pattern = r'\[\s*\[[\d,\s\[\]]+\]\s*\]'
     matches = re.findall(list_pattern, text)
 
-    # 从后往前查找（最后一个通常是答案）
-    for match in reversed(matches):
-        try:
-            # 清理并解析
-            cleaned = re.sub(r'\s+', '', match)
-            grid = ast.literal_eval(cleaned)
+    if matches:
+        if debug:
+            print(f"    {sample_info} Found {len(matches)} potential Python lists")
 
-            if validate_grid(grid):
-                # 转换为整数
-                grid = [[int(cell) for cell in row] for row in grid]
-                return grid
-        except:
-            continue
+        # 从后往前查找（最后一个通常是答案）
+        for i, match in enumerate(reversed(matches)):
+            try:
+                # 清理并解析
+                cleaned = re.sub(r'\s+', '', match)
+                grid = ast.literal_eval(cleaned)
+
+                if validate_grid(grid):
+                    # 转换为整数
+                    grid = [[int(cell) for cell in row] for row in grid]
+                    if debug:
+                        print(
+                            f"    {sample_info} ✓ Successfully parsed grid using Strategy 2 (list {len(matches) - i}/{len(matches)} from end)")
+                    return grid
+            except Exception as e:
+                if debug and i == 0:  # 只对最后一个列表显示错误
+                    print(f"    {sample_info} Failed to parse last list: {str(e)[:50]}")
+                continue
+    elif debug:
+        print(f"    {sample_info} No Python list format found")
 
     # 策略3: 查找关键词后的网格
+    if debug:
+        print(f"  {sample_info} Strategy 3: Looking for grids after keywords...")
+
     keywords = ['输出:', 'output:', 'result:', 'answer:', 'solution:',
                 'prediction:', 'grid:', '答案:', '结果:', '预测:']
+
+    found_keywords = [kw for kw in keywords if kw in text.lower()]
+    if found_keywords and debug:
+        print(f"    {sample_info} Found keywords: {found_keywords}")
+
     for keyword in keywords:
         if keyword in text.lower():
             idx = text.lower().rfind(keyword)  # 使用rfind找最后一次出现
             subset = text[idx:idx + 1000]
             grid = extract_grid_from_text(subset)
             if grid and validate_grid(grid):
+                if debug:
+                    print(f"    {sample_info} ✓ Successfully parsed grid using Strategy 3 (keyword: '{keyword}')")
                 return grid
 
+    if debug and found_keywords:
+        print(f"    {sample_info} Found keywords but failed to extract valid grid")
+
     # 策略4: 查找数字矩阵格式
+    if debug:
+        print(f"  {sample_info} Strategy 4: Looking for number matrix format...")
+
     lines = text.split('\n')
     for i in range(len(lines) - 1, -1, -1):  # 从后往前搜索
         if re.match(r'^[\d\s,\[\]]+$', lines[i].strip()):
@@ -172,12 +218,21 @@ def parse_output(text):
                 j -= 1
 
             if grid_lines:
+                if debug:
+                    print(f"    {sample_info} Found {len(grid_lines)} lines of numbers")
                 grid = parse_grid_lines(grid_lines)
                 if grid and validate_grid(grid):
+                    if debug:
+                        print(f"    {sample_info} ✓ Successfully parsed grid using Strategy 4 (matrix format)")
                     return grid
+                elif debug:
+                    print(f"    {sample_info} Found number lines but failed to form valid grid")
 
     # 如果都失败，返回默认值
-    print(f"Warning: Could not parse valid grid from output text")
+    if debug:
+        print(f"  {sample_info} ✗ All strategies failed! Returning default [[0]]")
+    else:
+        print(f"Warning: Could not parse valid grid from output text")
     return [[0]]
 
 
