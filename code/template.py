@@ -19,66 +19,70 @@ def construct_prompt(d):
     # 格式化训练样本
     train_examples = ""
     for i, example in enumerate(d['train'], 1):
-        train_examples += f"\n### Training Example {i}:\n"
-        train_examples += f"Input Grid:\n{format_grid(example['input'])}\n"
-        train_examples += f"Output Grid:\n{format_grid(example['output'])}\n"
+        train_examples += f"\n### 训练样本 {i}:\n"
+        train_examples += f"输入网格:\n{format_grid(example['input'])}\n"
+        train_examples += f"输出网格:\n{format_grid(example['output'])}\n"
 
     # 格式化测试输入
     test_input = format_grid(d['test'][0]['input'])
 
-    # 系统提示词
-    system_prompt = """You are an expert at solving Abstract Reasoning Corpus (ARC) puzzles. You excel at pattern recognition and logical reasoning.
+    # 系统提示词（中文版）
+    system_prompt = """你是一个解决抽象推理语料库(ARC)谜题的专家。你擅长模式识别和逻辑推理。
 
-Your task is to:
-1. Analyze transformation patterns in training examples
-2. Identify the consistent rule across ALL examples
-3. Apply this rule precisely to generate the test output
+你的任务是：
+1. 分析训练样本中的变换模式
+2. 识别所有样本中一致的规则
+3. 精确地应用这个规则来生成测试输出
 
-Be systematic and precise in your analysis."""
+请系统化和精确地进行分析。"""
 
-    # 用户提示词 - 详细的推理指导
-    user_prompt = f"""Solve this ARC puzzle step by step.
+    # 用户提示词（中文版）
+    user_prompt = f"""请逐步解决这个ARC谜题。
 
-## Training Examples:
+## 训练样本：
 {train_examples}
 
-## Test Input:
+## 测试输入：
 {test_input}
 
-## Solution Process:
+## 解题步骤：
 
-### Step 1: Detailed Observation
-For each training example, note:
-- Grid dimensions (input vs output)
-- Position of all non-zero values
-- Color/value patterns (0 is background)
-- Spatial relationships between elements
+### 步骤1：详细观察
+对每个训练样本，注意以下要点：
+- 网格维度（输入vs输出的大小）
+- 所有非零值的位置
+- 颜色/数值模式（0代表背景）
+- 元素之间的空间关系
+- 特殊的形状或图案
 
-### Step 2: Pattern Discovery
-Identify the transformation by checking:
-- Movement patterns (translation, rotation, reflection, scaling)
-- Color/value transformations
-- Grouping or splitting of elements
-- Symmetry operations
-- Mathematical relationships
-- Region-based operations (corners, edges, center)
+### 步骤2：模式发现
+通过以下方面识别变换规则：
+- 移动模式（平移、旋转、反射、缩放）
+- 颜色/数值变换
+- 元素的分组或分割
+- 对称操作
+- 数学关系
+- 基于区域的操作（角落、边缘、中心）
+- 复制或删除模式
 
-### Step 3: Rule Verification
-State the rule clearly and verify it works for ALL training examples.
-The rule MUST produce the exact output for each training input.
+### 步骤3：规则验证
+清晰地陈述规则，并验证它适用于所有训练样本。
+该规则必须能够为每个训练输入生成精确的输出。
 
-### Step 4: Test Application
-Apply the verified rule to the test input systematically.
+### 步骤4：测试应用
+系统地将验证过的规则应用到测试输入上。
+展示每一步的推理过程。
 
-### Step 5: Final Output
-Provide the output grid as a Python 2D list.
+### 步骤5：最终输出
+将输出网格作为Python二维列表提供。
 
-CRITICAL: 
-- Your final answer must be marked with "FINAL OUTPUT:" followed by the grid
-- The grid must be a valid Python list like [[1,2,3],[4,5,6]]
-- Double-check dimensions and values
+重要提示：
+- 你的最终答案必须用"最终输出："标记，后面跟着网格
+- 网格必须是有效的Python列表，如 [[1,2,3],[4,5,6]]
+- 仔细检查维度和数值
+- 确保输出格式正确
 
-Begin your analysis:"""
+现在开始你的分析："""
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -110,8 +114,9 @@ def parse_output(text):
     list: 从输出文本解析出的二维数组 (Python列表，元素为整数)
     """
 
-    # 策略1: 查找 "FINAL OUTPUT:" 标记
+    # 策略1: 查找 "最终输出:" 或 "FINAL OUTPUT:" 标记
     patterns = [
+        r"最终输出[：:]\s*\n?(.*?)(?:\n\n|\Z)",
         r"FINAL OUTPUT:\s*\n?(.*?)(?:\n\n|\Z)",
         r"Final Output:\s*\n?(.*?)(?:\n\n|\Z)",
         r"final output:\s*\n?(.*?)(?:\n\n|\Z)"
@@ -144,7 +149,8 @@ def parse_output(text):
             continue
 
     # 策略3: 查找关键词后的网格
-    keywords = ['output:', 'result:', 'answer:', 'solution:', 'prediction:', 'grid:']
+    keywords = ['输出:', 'output:', 'result:', 'answer:', 'solution:',
+                'prediction:', 'grid:', '答案:', '结果:', '预测:']
     for keyword in keywords:
         if keyword in text.lower():
             idx = text.lower().rfind(keyword)  # 使用rfind找最后一次出现

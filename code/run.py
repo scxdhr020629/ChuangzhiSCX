@@ -25,10 +25,11 @@ def calculate_accuracy(predicted, ground_truth):
 def main():
     # 直接在代码中设置参数
     API_KEY = "sk-32537d6922344b1faa9f853e971b23d4"  # 替换为你的API密钥
-    BASE_URL = "https://api.deepseek.com"  # OpenAI API endpoint
-    MODEL_NAME = "deepseek-chat"  # 或 "gpt-3.5-turbo"
-    TEMPERATURE = 1.0  # 低温度以获得确定性输出
+    BASE_URL = "https://api.deepseek.com"  # API endpoint
+    MODEL_NAME = "deepseek-chat"
+    TEMPERATURE = 1.0  # 温度参数
     NUM_EPOCHS = 1  # 评估轮数
+    MAX_ERRORS_TO_SHOW = 3  # 最多显示几个错误样本的详细信息
 
     # 初始化OpenAI客户端
     client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
@@ -52,6 +53,8 @@ def main():
 
         correct = 0
         total = 0
+        errors_shown = 0  # 记录已经显示的错误数量
+        failed_samples = 0  # 记录失败的样本数
 
         for idx, sample in enumerate(samples, start=1):
             # 保存ground truth
@@ -84,52 +87,90 @@ def main():
                 correct += is_correct
                 total += 1
 
-                # 显示进度
+                # 计算当前运行准确率（基于成功完成的样本）
                 accuracy_so_far = correct / total
                 status = "✓" if is_correct else "✗"
                 print(f"[{idx}/{len(samples)}] Sample {idx}: {status} | Running Accuracy: {accuracy_so_far:.2%}")
 
-                # 可选：显示预测和真实值（用于调试）
-                if not is_correct and idx <= 3:  # 只显示前3个错误的例子
+                # 只显示前MAX_ERRORS_TO_SHOW个错误的详细信息
+                if not is_correct and errors_shown < MAX_ERRORS_TO_SHOW:
                     print(f"  Expected: {ground_truth}")
                     print(f"  Predicted: {predicted}")
+                    errors_shown += 1
 
             except Exception as e:
-                print(f"[{idx}/{len(samples)}] Sample {idx}: Error - {str(e)}")
-                total += 1
+                # 改进的错误处理
+                error_msg = str(e)
+                failed_samples += 1
+
+                # 识别不同类型的错误
+                if "timeout" in error_msg.lower():
+                    print(f"[{idx}/{len(samples)}] Sample {idx}: Error - Request timed out.")
+                elif "connection" in error_msg.lower() or "network" in error_msg.lower():
+                    print(f"[{idx}/{len(samples)}] Sample {idx}: Error - Network connection issue.")
+                elif "rate" in error_msg.lower() and "limit" in error_msg.lower():
+                    print(f"[{idx}/{len(samples)}] Sample {idx}: Error - Rate limit exceeded.")
+                elif "api" in error_msg.lower() and "key" in error_msg.lower():
+                    print(f"[{idx}/{len(samples)}] Sample {idx}: Error - API key issue.")
+                else:
+                    # 对于其他错误，显示简短的错误信息
+                    short_error = error_msg[:80] + "..." if len(error_msg) > 80 else error_msg
+                    print(f"[{idx}/{len(samples)}] Sample {idx}: Error - {short_error}")
+
+                # 网络错误不计入total，这样准确率只基于成功完成的样本
                 continue
 
         # 计算本轮准确率
-        epoch_accuracy = correct / total if total > 0 else 0.0
-        epoch_accuracies.append(epoch_accuracy)
-        print(f"\nEpoch {epoch} Results: {correct}/{total} = {epoch_accuracy:.2%}")
+        if total > 0:
+            epoch_accuracy = correct / total
+            epoch_accuracies.append(epoch_accuracy)
+            print(f"\nEpoch {epoch} Results:")
+            print(f"  Successfully processed: {total}/{len(samples)} samples")
+            print(f"  Failed samples: {failed_samples}")
+            print(f"  Correct predictions: {correct}/{total}")
+            print(f"  Accuracy (on completed samples): {epoch_accuracy:.2%}")
+        else:
+            print(f"\nEpoch {epoch}: No samples completed successfully")
 
     # 显示最终结果
     print("\n" + "=" * 50)
     print("=== Final Results ===")
-    print(f"Processed {NUM_EPOCHS} epochs with {len(samples)} samples each")
+    print(f"Total samples in dataset: {len(samples)}")
 
-    if NUM_EPOCHS > 1:
-        avg_accuracy = sum(epoch_accuracies) / len(epoch_accuracies)
-        print(f"Average Accuracy across all epochs: {avg_accuracy:.2%}")
-        print(f"Per-epoch accuracies: {[f'{acc:.2%}' for acc in epoch_accuracies]}")
+    if epoch_accuracies:
+        if NUM_EPOCHS > 1:
+            avg_accuracy = sum(epoch_accuracies) / len(epoch_accuracies)
+            print(f"Average Accuracy across all epochs: {avg_accuracy:.2%}")
+            print(f"Per-epoch accuracies: {[f'{acc:.2%}' for acc in epoch_accuracies]}")
+        else:
+            print(f"Final Accuracy: {epoch_accuracies[0]:.2%}")
     else:
-        print(f"Final Accuracy: {epoch_accuracies[0]:.2%}")
+        print("No successful completions")
 
 
-def test_single_sample():
+def test_single_sample(sample_index=0):
     """
     测试单个样本（用于调试）
+
+    参数:
+    sample_index: 要测试的样本索引（从0开始）
     """
-    API_KEY = "your_api_key_here"
-    BASE_URL = "https://api.openai.com/v1"
-    MODEL_NAME = "gpt-4"
+    API_KEY = "sk-32537d6922344b1faa9f853e971b23d4"
+    BASE_URL = "https://api.deepseek.com"
+    MODEL_NAME = "deepseek-chat"
 
     client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 
-    # 读取第一个样本
+    # 读取指定样本
     with open("val.jsonl", "r", encoding="utf-8") as f:
-        sample = json.loads(f.readline())
+        lines = f.readlines()
+        if sample_index >= len(lines):
+            print(f"Error: Sample index {sample_index} out of range (max: {len(lines) - 1})")
+            return
+        sample = json.loads(lines[sample_index])
+
+    print(f"Testing Sample {sample_index + 1}")
+    print("=" * 50)
 
     # 保存ground truth
     ground_truth = sample['test'][0]['output']
@@ -144,33 +185,59 @@ def test_single_sample():
     print("Prompt constructed:")
     for msg in messages:
         print(f"\n[{msg['role'].upper()}]:")
-        print(msg['content'][:500] + "..." if len(msg['content']) > 500 else msg['content'])
+        content = msg['content']
+        if len(content) > 800:
+            print(content[:800] + "\n... [truncated]")
+        else:
+            print(content)
 
     print("\n" + "=" * 50)
     print("Calling API...")
 
-    # 调用API
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=messages,
-        temperature=0.1,
-        max_tokens=2000
-    )
+    try:
+        # 调用API
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=messages,
+            temperature=1.0,
+            max_tokens=8000
+        )
 
-    output_text = response.choices[0].message.content
-    print("\nModel Output:")
-    print(output_text)
+        output_text = response.choices[0].message.content
+        print("\nModel Output (first 1500 chars):")
+        print(output_text[:1500] + "..." if len(output_text) > 1500 else output_text)
 
-    print("\n" + "=" * 50)
-    predicted = parse_output(output_text)
-    print(f"Parsed Output: {predicted}")
-    print(f"Ground Truth: {ground_truth}")
-    print(f"Match: {predicted == ground_truth}")
+        print("\n" + "=" * 50)
+        predicted = parse_output(output_text)
+        print(f"Parsed Output: {predicted}")
+        print(f"Ground Truth: {ground_truth}")
+
+        is_match = predicted == ground_truth
+        print(f"Exact Match: {'✓ YES' if is_match else '✗ NO'}")
+
+        if not is_match:
+            print("\nDetailed Comparison:")
+            print(
+                f"Predicted dimensions: {len(predicted)}x{len(predicted[0]) if predicted and len(predicted) > 0 else 0}")
+            print(
+                f"Expected dimensions: {len(ground_truth)}x{len(ground_truth[0]) if ground_truth and len(ground_truth) > 0 else 0}")
+
+            # 显示差异位置
+            if len(predicted) == len(ground_truth) and all(len(pred_row) == len(gt_row)
+                                                           for pred_row, gt_row in zip(predicted, ground_truth)):
+                print("\nDifferences at positions:")
+                for i in range(len(predicted)):
+                    for j in range(len(predicted[i])):
+                        if predicted[i][j] != ground_truth[i][j]:
+                            print(f"  Position [{i}][{j}]: predicted={predicted[i][j]}, expected={ground_truth[i][j]}")
+
+    except Exception as e:
+        print(f"Error: {e}")
 
 
 if __name__ == "__main__":
     # 运行主测试
     main()
 
-    # 如果需要测试单个样本，取消注释下面这行
-    # test_single_sample()
+    # 如果需要测试特定样本，使用下面的代码
+    # test_single_sample(1)  # 测试第2个样本（索引从0开始）
