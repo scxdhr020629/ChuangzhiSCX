@@ -155,7 +155,7 @@ def test_single_sample(sample_index=0):
     参数:
     sample_index: 要测试的样本索引（从0开始）
     """
-    API_KEY = "sk-32537d6922344b1faa9f853e971b23d4"
+    API_KEY = "sk-4d7da1b29385456ab9d5d32fbd4be176"
     BASE_URL = "https://api.deepseek.com"
     MODEL_NAME = "deepseek-chat"
 
