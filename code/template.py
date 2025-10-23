@@ -5,7 +5,7 @@ import ast
 
 def construct_prompt(d):
     """
-    构造用于大语言模型的提示词
+    构造用于大语言模型的提示词（增强版 - 包含完整的ARC操作类型）
 
     参数:
     d (dict): jsonl数据文件的一行，解析成字典后的变量。
@@ -26,18 +26,18 @@ def construct_prompt(d):
     # 格式化测试输入
     test_input = format_grid(d['test'][0]['input'])
 
-    # 系统提示词（增强版）
-    system_prompt = """你是一个解决抽象推理语料库(ARC)谜题的专家。你擅长模式识别、逻辑推理和规则发现。
+    # 系统提示词（中文版）
+    system_prompt = """你是一个解决抽象推理语料库(ARC)谜题的专家。你擅长模式识别和逻辑推理。
 
 你的任务是：
-1. 仔细分析训练样本中的所有变换模式
-2. 识别在所有样本中一致的变换规则
+1. 分析训练样本中的变换模式
+2. 识别所有样本中一致的规则
 3. 精确地应用这个规则来生成测试输出
 
-请系统化、精确地进行分析，特别注意复杂的组合规则。"""
+请系统化和精确地进行分析。"""
 
-    # 用户提示词（增强版，包含更多复杂模式的引导）
-    user_prompt = f"""请逐步解决这个ARC谜题。注意：这可能是一个复杂的多步骤变换。
+    # 用户提示词（中文版 - 增强版）
+    user_prompt = f"""请逐步解决这个ARC谜题。
 
 ## 训练样本：
 {train_examples}
@@ -45,140 +45,157 @@ def construct_prompt(d):
 ## 测试输入：
 {test_input}
 
-## 解题指南：
+## 解题步骤：
 
-### 步骤1：深度观察分析
-对每个训练样本进行全面分析：
+### 步骤1：详细观察和操作类型初步识别
 
-**基础信息：**
-- 输入和输出的精确维度（行数×列数）
-- 维度变化规律（是否有扩展、缩减、或保持不变）
-- 所有非零值的位置和数值
-- 0值（背景）和非0值的分布模式
+对每个训练样本，注意以下要点：
+- 网格维度（输入vs输出的大小）
+- 所有非零值的位置
+- 颜色/数值模式（0代表背景）
+- 元素之间的空间关系
+- 特殊的形状或图案
 
-**结构分析：**
-- 网格是否可以分割成多个子区域（如3×3块、行组、列组）
-- 是否存在重复的模式或对称性
-- 边界、角落、中心区域是否有特殊处理
+**同时，初步识别这个任务可能涉及的操作类型（可多选）：**
 
-### 步骤2：高级模式识别
-检查以下复杂变换模式：
+**基础操作：**
+- [ ] 简单颜色/数值映射 - 将一种颜色变成另一种颜色
+- [ ] 平移(Translation) - 元素在网格中移动位置
+- [ ] 旋转(Rotation) - 元素或整个网格旋转(90°/180°/270°)
+- [ ] 翻转/反射(Reflection) - 沿水平/竖直/对角线翻转
+- [ ] 缩放(Scaling) - 放大或缩小元素或整个网格
 
-**颜色/数值变换：**
-- 简单映射（如：1→2, 2→3）
-- 条件映射（如：基于位置或邻居的颜色变换）
-- 优先级规则（如：某些颜色覆盖其他颜色）
+**对象和结构操作：**
+- [ ] 对象提取/分离 - 提取特定颜色或形状的对象
+- [ ] 连通分量识别 - 找出相邻的同色元素组作为一个整体
+- [ ] 边界/框架操作 - 添加、删除或检测边框/轮廓
+- [ ] 元素的分组或分割 - 根据位置或属性分组
 
-**空间变换：**
-- 平移、旋转（90°、180°、270°）、镜像反射
-- 缩放（放大或缩小）
-- 区域选择（从多个块中选择特定块）
-- 区域复制或重排
+**模式和重复操作：**
+- [ ] 重复/平铺(Repetition) - 小图案重复排列
+- [ ] 模式检测 - 识别重复出现的图案或周期性结构
+- [ ] 复制模式 - 将模式从一个位置复制到另一个位置
 
-**组合变换：**
-- 多步骤变换（先变换A，再变换B）
-- 条件变换（如果条件X，则应用规则Y）
-- 部分变换（只对特定区域或特定颜色应用规则）
+**填充和区域操作：**
+- [ ] 填充/清空(Fill/Erase) - 用特定颜色填充或清空区域
+- [ ] 洪泛填充(Flood Fill) - 填充连续的同色区域
+- [ ] 基于区域的操作 - 针对角落、边缘、中心等特定区域的操作
+- [ ] 网格划分 - 将网格分成块或象限分别处理
 
-**特殊模式：**
-- 块选择规则（如：基于颜色优先级选择3×3块）
-- 内容填充规则（如：复制部分内容到新区域）
-- 模式延续（如：继续某个序列或图案）
-- 计数和数学运算
+**高阶逻辑操作：**
+- [ ] 对称操作 - 基于对称性的变换
+- [ ] 条件规则 - 根据条件应用不同的变换(如：如果在边界→变红)
+- [ ] 逻辑AND/OR/NOT - 基于多个条件的布尔操作
+- [ ] 数学关系 - 基于计数、距离、大小等数值关系
 
-### 步骤3：规则假设与验证
-基于观察，形成规则假设：
+**尺寸和维度操作：**
+- [ ] 网格扩展/扩大 - 增大网格尺寸
+- [ ] 网格裁剪/缩小 - 减小网格尺寸
+- [ ] 行/列重复 - 重复特定的行或列
+- [ ] 行/列删除 - 删除特定的行或列
+- [ ] 投影操作 - 将二维信息压缩到一维(横向/纵向投影)
 
-1. **初步假设**：描述你观察到的主要模式
-2. **详细规则**：精确定义变换步骤
-3. **验证**：将规则应用到每个训练样本
-   - 训练样本1：输入 → [应用规则] → 预期输出？ ✓/✗
-   - 训练样本2：输入 → [应用规则] → 预期输出？ ✓/✗
-   - 训练样本3：输入 → [应用规则] → 预期输出？ ✓/✗（如果有）
+**比较和关系操作：**
+- [ ] 计数操作 - 基于元素数量的变换
+- [ ] 相对位置操作 - 基于相对位置(左边/右边/上方/下方)
+- [ ] 相似性检测 - 找相似或相同的元素
+- [ ] 最大值/最小值提取 - 提取最大或最小的对象
 
-**重要**：如果规则在任何训练样本上失败，重新分析并调整规则。
+**多步骤操作：**
+- [ ] 多步序列 - 多个操作按顺序应用
+- [ ] 变换链 - 一个操作的输出是下一个的输入
+- [ ] 递归操作 - 对每个找到的对象重复同一操作
 
-### 步骤4：规则精炼
-确认最终规则：
-- 清晰地陈述完整的变换规则
-- 如果是多步骤，列出每个步骤
-- 确保规则能解释所有训练样本
+---
 
-### 步骤5：测试应用
-将验证过的规则系统地应用到测试输入：
-1. 显示每个变换步骤
-2. 展示中间结果（如果有多步骤）
-3. 生成最终输出
+### 步骤2：模式发现（深度分析）
 
-### 步骤6：最终输出
-提供输出网格作为Python二维列表。
+基于步骤1的初步识别，现在进行深度分析来识别变换规则。
 
-## 重要提示：
-- 考虑复杂的多步骤变换
-- 注意网格可能被分割成块进行处理
-- 某些规则可能基于颜色优先级或条件判断
-- 你的最终答案必须用"最终输出："标记
-- 网格格式必须是有效的Python列表，如 [[1,2,3],[4,5,6]]
-- 仔细验证输出的维度和数值
+**对每个训练样本进行详细的模式分析：**
 
-现在开始你的详细分析："""
+**样本{1}分析：**
+
+1. **基础信息**
+   - 输入维度：___ × ___
+   - 输出维度：___ × ___
+   - 尺寸是否改变？(是/否)
+
+2. **颜色/数值分析**
+   - 输入中出现的所有非零颜色：___
+   - 输出中出现的所有颜色：___
+   - 颜色映射关系（如 1→2, 3→5）：___
+
+3. **位置和空间分析**
+   - 输入中非零元素的具体位置：___
+   - 输出中非零元素的具体位置：___
+   - 位置是否改变？如果改变，是什么类型的改变？(平移/旋转/翻转/其他)
+
+4. **对象和结构分析**
+   - 输入中是否有明确的"对象"(连续的非零元素)？
+   - 如果有，有多少个对象？每个对象的形状是什么？
+   - 输出中对象的数量和形状是否改变？
+
+5. **模式和重复分析**
+   - 输入中是否有重复的模式或周期性结构？
+   - 输出中是否有重复的模式？
+   - 重复的单元是什么？重复了多少次？
+
+6. **特殊操作检查**
+   - 是否涉及边框或轮廓？(添加/删除/改变)
+   - 是否涉及填充操作？
+   - 是否涉及对称性？
+   - 是否有明确的条件规则(如：背景变为X，对象变为Y)？
+
+7. **变换总结**
+   用一句话总结该样本的主要变换：___
+
+**样本2分析：** (如果有)
+[重复上述分析流程]
+
+**样本3+分析：** (如果有)
+[重复上述分析流程]
+
+**跨样本规律对比**
+- 所有样本中的变换是否一致？
+- 如果有差异，这些差异说明了什么？(是否有条件规则？)
+- 最小公共规则是什么？
+
+---
+
+### 步骤3：规则验证
+清晰地陈述规则，并验证它适用于所有训练样本。
+该规则必须能够为每个训练输入生成精确的输出。
+
+**最终规则陈述：**
+"___"
+
+**验证过程：**
+- 规则是否在样本1上成立？(是/否) 如果否，差异是什么？
+- 规则是否在样本2上成立？(是/否) 如果否，差异是什么？
+- 规则是否在样本3+上成立？(是/否) 如果否，差异是什么？
+
+如果有不一致，请调整规则并重新验证。
+
+### 步骤4：测试应用
+系统地将验证过的规则应用到测试输入上。
+展示每一步的推理过程。
+
+### 步骤5：最终输出
+将输出网格作为Python二维列表提供。
+
+重要提示：
+- 你的最终答案必须用"最终输出："标记，后面跟着网格
+- 网格必须是有效的Python列表，如 [[1,2,3],[4,5,6]]
+- 仔细检查维度和数值
+- 确保输出格式正确
+
+现在开始你的分析："""
 
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt}
     ]
-
-    return messages
-
-
-def construct_prompt_with_hints(d, enable_hints=True):
-    """
-    构造带有额外提示的prompt（可选）
-
-    这个版本会根据输入输出的特征给出更具体的提示
-    """
-    # 分析训练样本的特征
-    input_shapes = [f"{len(ex['input'])}×{len(ex['input'][0])}" for ex in d['train']]
-    output_shapes = [f"{len(ex['output'])}×{len(ex['output'][0])}" for ex in d['train']]
-
-    # 检查是否有维度变化
-    has_size_change = any(input_shapes[i] != output_shapes[i] for i in range(len(input_shapes)))
-
-    # 检查是否可能有块结构
-    possible_blocks = False
-    for ex in d['train']:
-        h, w = len(ex['input']), len(ex['input'][0])
-        if (h % 3 == 0 or w % 3 == 0):
-            possible_blocks = True
-            break
-
-    # 基础prompt
-    messages = construct_prompt(d)
-
-    if enable_hints:
-        # 添加额外提示
-        hints = "\n\n## 额外观察提示：\n"
-
-        if has_size_change:
-            hints += "- ⚠️ 注意：输入和输出的维度不同，可能涉及扩展、缩减或选择操作\n"
-
-        if possible_blocks:
-            hints += "- ⚠️ 网格维度可被3整除，考虑是否存在3×3块的处理模式\n"
-
-        # 检查颜色数量
-        all_values = set()
-        for ex in d['train']:
-            for row in ex['input'] + ex['output']:
-                all_values.update(row)
-
-        if len(all_values) <= 3:
-            hints += f"- ⚠️ 只使用了{len(all_values)}种颜色值 {sorted(all_values)}，可能存在简单的颜色映射规则\n"
-
-        # 将提示插入到用户消息中
-        messages[1]['content'] = messages[1]['content'].replace(
-            "现在开始你的详细分析：",
-            hints + "\n现在开始你的详细分析："
-        )
 
     return messages
 
@@ -194,109 +211,63 @@ def format_grid(grid):
     return '\n'.join(lines)
 
 
-def parse_output(text, debug=False, sample_idx=None):
+def parse_output(text):
     """
     解析大语言模型的输出文本，提取预测的网格
 
     参数:
     text (str): 大语言模型在设计prompt下的输出文本
-    debug (bool): 是否输出调试信息
-    sample_idx (int): 当前样本索引（用于调试输出）
 
     返回:
     list: 从输出文本解析出的二维数组 (Python列表，元素为整数)
     """
 
-    sample_info = f"[Sample {sample_idx}]" if sample_idx else ""
-
-    if debug:
-        print(f"  {sample_info} Parsing output using multiple strategies...")
-
     # 策略1: 查找 "最终输出:" 或 "FINAL OUTPUT:" 标记
-    if debug:
-        print(f"  {sample_info} Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...")
-
     patterns = [
-        (r"最终输出[：:]\s*\n?(.*?)(?:\n\n|\Z)", "最终输出"),
-        (r"FINAL OUTPUT:\s*\n?(.*?)(?:\n\n|\Z)", "FINAL OUTPUT"),
-        (r"Final Output:\s*\n?(.*?)(?:\n\n|\Z)", "Final Output"),
-        (r"final output:\s*\n?(.*?)(?:\n\n|\Z)", "final output")
+        r"最终输出[：:]\s*\n?(.*?)(?:\n\n|\Z)",
+        r"FINAL OUTPUT:\s*\n?(.*?)(?:\n\n|\Z)",
+        r"Final Output:\s*\n?(.*?)(?:\n\n|\Z)",
+        r"final output:\s*\n?(.*?)(?:\n\n|\Z)"
     ]
 
-    for pattern, pattern_name in patterns:
+    for pattern in patterns:
         match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
         if match:
-            if debug:
-                print(f"    {sample_info} Found '{pattern_name}' marker!")
             output_text = match.group(1).strip()
             grid = extract_grid_from_text(output_text)
             if grid and validate_grid(grid):
-                if debug:
-                    print(f"    {sample_info} ✓ Successfully parsed grid using Strategy 1 (marker: {pattern_name})")
                 return grid
-            elif debug:
-                print(f"    {sample_info} Found marker but failed to extract valid grid")
 
     # 策略2: 查找所有Python列表格式
-    if debug:
-        print(f"  {sample_info} Strategy 2: Looking for Python list format [[...]]...")
-
     list_pattern = r'\[\s*\[[\d,\s\[\]]+\]\s*\]'
     matches = re.findall(list_pattern, text)
 
-    if matches:
-        if debug:
-            print(f"    {sample_info} Found {len(matches)} potential Python lists")
+    # 从后往前查找（最后一个通常是答案）
+    for match in reversed(matches):
+        try:
+            # 清理并解析
+            cleaned = re.sub(r'\s+', '', match)
+            grid = ast.literal_eval(cleaned)
 
-        # 从后往前查找（最后一个通常是答案）
-        for i, match in enumerate(reversed(matches)):
-            try:
-                # 清理并解析
-                cleaned = re.sub(r'\s+', '', match)
-                grid = ast.literal_eval(cleaned)
-
-                if validate_grid(grid):
-                    # 转换为整数
-                    grid = [[int(cell) for cell in row] for row in grid]
-                    if debug:
-                        print(
-                            f"    {sample_info} ✓ Successfully parsed grid using Strategy 2 (list {len(matches) - i}/{len(matches)} from end)")
-                    return grid
-            except Exception as e:
-                if debug and i == 0:  # 只对最后一个列表显示错误
-                    print(f"    {sample_info} Failed to parse last list: {str(e)[:50]}")
-                continue
-    elif debug:
-        print(f"    {sample_info} No Python list format found")
+            if validate_grid(grid):
+                # 转换为整数
+                grid = [[int(cell) for cell in row] for row in grid]
+                return grid
+        except:
+            continue
 
     # 策略3: 查找关键词后的网格
-    if debug:
-        print(f"  {sample_info} Strategy 3: Looking for grids after keywords...")
-
     keywords = ['输出:', 'output:', 'result:', 'answer:', 'solution:',
                 'prediction:', 'grid:', '答案:', '结果:', '预测:']
-
-    found_keywords = [kw for kw in keywords if kw in text.lower()]
-    if found_keywords and debug:
-        print(f"    {sample_info} Found keywords: {found_keywords}")
-
     for keyword in keywords:
         if keyword in text.lower():
             idx = text.lower().rfind(keyword)  # 使用rfind找最后一次出现
             subset = text[idx:idx + 1000]
             grid = extract_grid_from_text(subset)
             if grid and validate_grid(grid):
-                if debug:
-                    print(f"    {sample_info} ✓ Successfully parsed grid using Strategy 3 (keyword: '{keyword}')")
                 return grid
 
-    if debug and found_keywords:
-        print(f"    {sample_info} Found keywords but failed to extract valid grid")
-
     # 策略4: 查找数字矩阵格式
-    if debug:
-        print(f"  {sample_info} Strategy 4: Looking for number matrix format...")
-
     lines = text.split('\n')
     for i in range(len(lines) - 1, -1, -1):  # 从后往前搜索
         if re.match(r'^[\d\s,\[\]]+$', lines[i].strip()):
@@ -309,21 +280,12 @@ def parse_output(text, debug=False, sample_idx=None):
                 j -= 1
 
             if grid_lines:
-                if debug:
-                    print(f"    {sample_info} Found {len(grid_lines)} lines of numbers")
                 grid = parse_grid_lines(grid_lines)
                 if grid and validate_grid(grid):
-                    if debug:
-                        print(f"    {sample_info} ✓ Successfully parsed grid using Strategy 4 (matrix format)")
                     return grid
-                elif debug:
-                    print(f"    {sample_info} Found number lines but failed to form valid grid")
 
     # 如果都失败，返回默认值
-    if debug:
-        print(f"  {sample_info} ✗ All strategies failed! Returning default [[0]]")
-    else:
-        print(f"Warning: Could not parse valid grid from output text")
+    print(f"Warning: Could not parse valid grid from output text")
     return [[0]]
 
 

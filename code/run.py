@@ -24,7 +24,7 @@ def calculate_accuracy(predicted, ground_truth):
 
 def main():
     # 直接在代码中设置参数
-    API_KEY = "sk-32537d6922344b1faa9f853e971b23d4"  # 替换为你的API密钥
+    API_KEY = "sk-d2171e95a0364e86a5a9148aeab43670"  # 替换为你的API密钥
     BASE_URL = "https://api.deepseek.com"  # API endpoint
     MODEL_NAME = "deepseek-chat"
     TEMPERATURE = 1.0  # 温度参数
@@ -80,7 +80,7 @@ def main():
                 output_text = response.choices[0].message.content.strip()
 
                 # 解析输出
-                predicted = parse_output(output_text, debug=True, sample_idx=idx)
+                predicted = parse_output(output_text)
 
                 # 计算准确率
                 is_correct = calculate_accuracy(predicted, ground_truth)
@@ -155,7 +155,7 @@ def test_single_sample(sample_index=0):
     参数:
     sample_index: 要测试的样本索引（从0开始）
     """
-    API_KEY = "sk-32537d6922344b1faa9f853e971b23d4"
+    API_KEY = "sk-d2171e95a0364e86a5a9148aeab43670"
     BASE_URL = "https://api.deepseek.com"
     MODEL_NAME = "deepseek-chat"
 

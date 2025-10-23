@@ -1,3 +1,50 @@
+### 初始版本
+
+```
+=== Epoch 1/1 ===
+[1/20] Sample 1: ✓ | Running Accuracy: 100.00%
+[2/20] Sample 2: ✗ | Running Accuracy: 50.00%
+  Expected: [[2, 2, 2], [0, 2, 0], [0, 2, 0], [2, 2, 2], [0, 2, 0], [0, 2, 0], [2, 2, 2], [0, 2, 0], [0, 2, 0]]
+  Predicted: [[2, 2, 2], [0, 2, 0], [0, 2, 0], [0, 2, 0], [2, 2, 2], [0, 2, 0], [0, 2, 0], [0, 2, 0], [0, 2, 0]]
+[3/20] Sample 3: ✗ | Running Accuracy: 33.33%
+  Expected: [[0, 0, 3, 0, 0, 0], [0, 0, 0, 3, 0, 0], [0, 4, 9, 0, 3, 0], [0, 0, 4, 9, 0, 3], [0, 0, 0, 4, 9, 0], [0, 0, 0, 0, 4, 9]]
+  Predicted: [[0, 0, 3, 0, 0, 0], [0, 0, 0, 3, 0, 0], [0, 4, 9, 0, 0, 0], [0, 0, 4, 9, 0, 3], [0, 0, 0, 4, 9, 0], [0, 0, 0, 0, 4, 9]]
+[4/20] Sample 4: ✓ | Running Accuracy: 50.00%
+[5/20] Sample 5: ✓ | Running Accuracy: 60.00%
+[6/20] Sample 6: ✗ | Running Accuracy: 50.00%
+  Expected: [[5, 4, 4], [4, 5, 4], [4, 5, 4]]
+  Predicted: [[1, 1, 1], [1, 8, 8], [1, 8, 8]]
+[7/20] Sample 7: ✓ | Running Accuracy: 57.14%
+[8/20] Sample 8: ✓ | Running Accuracy: 62.50%
+[9/20] Sample 9: ✓ | Running Accuracy: 66.67%
+[10/20] Sample 10: ✗ | Running Accuracy: 60.00%
+[11/20] Sample 11: ✓ | Running Accuracy: 63.64%
+[12/20] Sample 12: ✓ | Running Accuracy: 66.67%
+[13/20] Sample 13: ✗ | Running Accuracy: 61.54%
+[14/20] Sample 14: ✓ | Running Accuracy: 64.29%
+[15/20] Sample 15: ✓ | Running Accuracy: 66.67%
+[16/20] Sample 16: ✓ | Running Accuracy: 68.75%
+[17/20] Sample 17: Error - Network connection issue.
+[18/20] Sample 18: Error - Network connection issue.
+[19/20] Sample 19: ✓ | Running Accuracy: 70.59%
+[20/20] Sample 20: ✗ | Running Accuracy: 66.67%
+
+Epoch 1 Results:
+  Successfully processed: 18/20 samples
+  Failed samples: 2
+  Correct predictions: 12/18
+  Accuracy (on completed samples): 66.67%
+
+==================================================
+=== Final Results ===
+Total samples in dataset: 20
+Final Accuracy: 66.67%
+```
+
+
+
+
+
 ### 复杂规则版本V1
 
 ```
@@ -133,3 +180,145 @@ Process finished with exit code 0
 
 ```
 
+6 7 10 11 12 17 20 
+
+### 复杂规则版本V1 使用hint
+
+```
+=== Epoch 1/1 ===
+  [Sample 1] Parsing output using multiple strategies...
+  [Sample 1] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 1] Found '最终输出' marker!
+    [Sample 1] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[1/20] Sample 1: ✓ | Running Accuracy: 100.00%
+  [Sample 2] Parsing output using multiple strategies...
+  [Sample 2] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 2] Found '最终输出' marker!
+    [Sample 2] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[2/20] Sample 2: ✓ | Running Accuracy: 100.00%
+  [Sample 3] Parsing output using multiple strategies...
+  [Sample 3] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 3] Found '最终输出' marker!
+    [Sample 3] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[3/20] Sample 3: ✗ | Running Accuracy: 66.67%
+  Expected: [[0, 0, 3, 0, 0, 0], [0, 0, 0, 3, 0, 0], [0, 4, 9, 0, 3, 0], [0, 0, 4, 9, 0, 3], [0, 0, 0, 4, 9, 0], [0, 0, 0, 0, 4, 9]]
+  Predicted: [[0, 0, 3, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 4, 9, 0], [0, 0, 0, 0, 0, 3], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+  [Sample 4] Parsing output using multiple strategies...
+  [Sample 4] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 4] Found '最终输出' marker!
+    [Sample 4] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[4/20] Sample 4: ✗ | Running Accuracy: 50.00%
+  Expected: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [5, 0, 0, 0, 0], [5, 2, 0, 4, 0], [5, 2, 6, 4, 3]]
+  Predicted: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [5, 0, 0, 0, 0], [5, 2, 4, 0, 0], [5, 2, 6, 4, 3]]
+  [Sample 5] Parsing output using multiple strategies...
+  [Sample 5] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 5] Found '最终输出' marker!
+    [Sample 5] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[5/20] Sample 5: ✓ | Running Accuracy: 60.00%
+  [Sample 6] Parsing output using multiple strategies...
+  [Sample 6] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 6] Found '最终输出' marker!
+    [Sample 6] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[6/20] Sample 6: ✗ | Running Accuracy: 50.00%
+  Expected: [[5, 4, 4], [4, 5, 4], [4, 5, 4]]
+  Predicted: [[1, 1, 1], [1, 8, 8], [1, 8, 8]]
+  [Sample 7] Parsing output using multiple strategies...
+  [Sample 7] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 7] Found '最终输出' marker!
+    [Sample 7] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[7/20] Sample 7: ✗ | Running Accuracy: 42.86%
+  [Sample 8] Parsing output using multiple strategies...
+  [Sample 8] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 8] Found '最终输出' marker!
+    [Sample 8] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[8/20] Sample 8: ✓ | Running Accuracy: 50.00%
+  [Sample 9] Parsing output using multiple strategies...
+  [Sample 9] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 9] Found '最终输出' marker!
+    [Sample 9] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[9/20] Sample 9: ✓ | Running Accuracy: 55.56%
+  [Sample 10] Parsing output using multiple strategies...
+  [Sample 10] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 10] Found '最终输出' marker!
+    [Sample 10] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[10/20] Sample 10: ✗ | Running Accuracy: 50.00%
+  [Sample 11] Parsing output using multiple strategies...
+  [Sample 11] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 11] Found '最终输出' marker!
+    [Sample 11] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[11/20] Sample 11: ✗ | Running Accuracy: 45.45%
+  [Sample 12] Parsing output using multiple strategies...
+  [Sample 12] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 12] Found '最终输出' marker!
+    [Sample 12] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[12/20] Sample 12: ✓ | Running Accuracy: 50.00%
+  [Sample 13] Parsing output using multiple strategies...
+  [Sample 13] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 13] Found '最终输出' marker!
+    [Sample 13] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[13/20] Sample 13: ✓ | Running Accuracy: 53.85%
+  [Sample 14] Parsing output using multiple strategies...
+  [Sample 14] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 14] Found '最终输出' marker!
+    [Sample 14] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[14/20] Sample 14: ✓ | Running Accuracy: 57.14%
+  [Sample 15] Parsing output using multiple strategies...
+  [Sample 15] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 15] Found '最终输出' marker!
+    [Sample 15] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[15/20] Sample 15: ✗ | Running Accuracy: 53.33%
+  [Sample 16] Parsing output using multiple strategies...
+  [Sample 16] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 16] Found '最终输出' marker!
+    [Sample 16] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[16/20] Sample 16: ✓ | Running Accuracy: 56.25%
+  [Sample 17] Parsing output using multiple strategies...
+  [Sample 17] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 17] Found '最终输出' marker!
+    [Sample 17] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[17/20] Sample 17: ✓ | Running Accuracy: 58.82%
+  [Sample 18] Parsing output using multiple strategies...
+  [Sample 18] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 18] Found '最终输出' marker!
+    [Sample 18] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[18/20] Sample 18: ✓ | Running Accuracy: 61.11%
+  [Sample 19] Parsing output using multiple strategies...
+  [Sample 19] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 19] Found '最终输出' marker!
+    [Sample 19] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[19/20] Sample 19: ✓ | Running Accuracy: 63.16%
+  [Sample 20] Parsing output using multiple strategies...
+  [Sample 20] Strategy 1: Looking for '最终输出:' or 'FINAL OUTPUT:' markers...
+    [Sample 20] Found '最终输出' marker!
+    [Sample 20] ✓ Successfully parsed grid using Strategy 1 (marker: 最终输出)
+[20/20] Sample 20: ✗ | Running Accuracy: 60.00%
+
+Epoch 1 Results:
+  Successfully processed: 20/20 samples
+  Failed samples: 0
+  Correct predictions: 12/20
+  Accuracy (on completed samples): 60.00%
+
+==================================================
+=== Final Results ===
+Total samples in dataset: 20
+Final Accuracy: 60.00%
+```
+
+3 4 6 7 10 1115 20
+
+### 复杂版本V2
+
+加上分析复杂度 但是由于加上这些分析复杂度导致注意力消失
+
+现在回调简单些看看效果
+
+
+
+
+
+我现在要做的事情 
+
+1 提高预测准确性
+
+2 可以看看能不能多轮对话自我纠正
